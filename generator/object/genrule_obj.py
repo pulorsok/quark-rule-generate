@@ -1,9 +1,9 @@
 
 
-from quark.Objects.quarkrule import QuarkRule
+from quark.core.struct.ruleobject import RuleObject
 
 
-class GenRuleObject(QuarkRule):
+class GenRuleObject(RuleObject):
     __slots__ = ["check_item", "_json_obj", "_crime",
                  "_permission", "_api", "_score", "rule_filename"]
 

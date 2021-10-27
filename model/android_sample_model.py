@@ -1,5 +1,5 @@
 from utils.tools import sha256sum
-from quark.Objects.quark import Quark
+from quark.core.quark import Quark
 from db.database import DataBase
 
 

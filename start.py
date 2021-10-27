@@ -14,15 +14,15 @@ from tqdm import tqdm
 from model.android_sample_model import AndroidSampleModel
 from generator.method_generator import MethodCombGenerator
 from generator.api_generator import ApiGenerator
-from quark.Objects.quark import Quark
+from quark.core.quark import Quark
 
 from db.database import DataBase
 
-from utils.tools import distribute, api_filter
+from utils.tools import distribute, api_filter, api_key_word_filter
 from itertools import repeat
 
 db = DataBase()
-
+KEYWORDS = ["getAbsolutePath"]
 
 @click.command()
 @click.option(
@@ -60,7 +60,13 @@ db = DataBase()
     show_default=True,
     help="The stage of rule generate",
 )
-def main(apk, multiprocess, debug, export, stage):
+@click.option(
+    "-f",
+    "--filter",
+    is_flag=True,
+    help="Debug mode, it will delete apk analying progress after finish",
+)
+def main(apk, multiprocess, debug, export, stage, filter):
     """Quark rule generate project"""
 
     apk = AndroidSampleModel(apk)
@@ -69,8 +75,9 @@ def main(apk, multiprocess, debug, export, stage):
     if export:
         
         result = db.find_rules_by_sample(apk.id)
+        apk_sample = db.search_sample_data(apk.id)
 
-        if result["status"] is not 1:
+        if apk_sample["status"] != 1:
             if not click.confirm(f'The apk generate progress is not complete, Do you sure want to continue?'):
                 return
 
@@ -92,7 +99,7 @@ def main(apk, multiprocess, debug, export, stage):
                 count += 1
         return
 
-    # Apis generate
+    # # Apis generate
     primary, secondary, p_count = api_filter(apk, 0.2)
     
     if stage == 1:
@@ -107,7 +114,18 @@ def main(apk, multiprocess, debug, export, stage):
     elif stage == 4:
         first_apis = secondary
         second_apis = secondary
+    elif stage == 0:
+        first_apis = secondary + primary
+        second_apis = secondary + primary
+    
+    if filter:
+        # keywords filter
+        first_apis = api_key_word_filter(apk.apk_analysis.apkinfo.all_methods, KEYWORDS)
         
+        print(len(first_apis))
+        print(len(second_apis))
+        # return
+    
     api_generator = ApiGenerator(first_apis)
     apis = list(api_generator.initialize())
 
@@ -132,12 +150,12 @@ def main(apk, multiprocess, debug, export, stage):
         tqdm.write(f"The rest of APIs number: {len(new_apis)}")
 
         generator = MethodCombGenerator(apk)
-        generator.first_stage_rule_generate(new_apis, primary)
+        generator.first_stage_rule_generate(new_apis, second_apis)
 
     else:
         generate_multiprocess(apk, apis, second_apis, multiprocess)
         
-    db.set_status(apk.id, 1)
+    # db.set_status(apk.id, 1)
     if debug:
         tqdm.write("Start with debug mode, will delete data after process.")
         result = db.search_sample_data(apk.id)
@@ -178,6 +196,7 @@ def rule_obj_generate(rule, f_name):
             }
         ],
         "score": 1,
+        "label": []
     }
     return rule_obj
 

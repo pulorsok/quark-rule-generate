@@ -59,7 +59,7 @@ def distribute(seq, sort):
 
 def api_filter(apk, percentile_rank):
     statistic_result = {}
-    api_pool = apk.apis
+    api_pool = apk.apk_analysis.apkinfo.android_apis
     for api in api_pool:
         number_from = len(apk.apk_analysis.apkinfo.upperfunc(api))
         statistic_result[api] = number_from
@@ -79,3 +79,14 @@ def api_filter(apk, percentile_rank):
         api_under.append(api)
         
     return api_above, api_under, p_count
+
+def api_key_word_filter(api_pool, keywords):
+    
+    new_api_pool = []
+    for api in api_pool:
+        for keyword in keywords:
+            if keyword.lower() in api.name.lower():
+                new_api_pool.append(api)
+                break
+    
+    return new_api_pool

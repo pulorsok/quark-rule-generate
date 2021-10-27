@@ -150,6 +150,7 @@ class MethodCombGenerator:
                     "score": 1
                 }
                 comb = GenRuleObject(_comb)
+                # print(_comb)
 
                 try:
                     result = self.apk.apk_analysis.run(comb)
@@ -159,6 +160,7 @@ class MethodCombGenerator:
                 except Exception as e:
                     tqdm.write("{} and {} combination has some error when analyzing, ERROR MESSAGE: {}".format(
                         api1.id, api2.id, e))
+                    
                     continue
 
                 if not comb.check_item[4]:

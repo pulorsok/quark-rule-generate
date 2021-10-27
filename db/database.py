@@ -15,8 +15,8 @@ DATABASE_NAME = "quark"
 DATABASE_HOST = "localhost"
 DATABASE_PORT = 27017
 
-DATABASE_USERNAME = "root"
-DATABASE_PASSWORD = "pass"
+DATABASE_USERNAME = ""
+DATABASE_PASSWORD = ""
 
 
 class DataBase:
@@ -27,7 +27,7 @@ class DataBase:
 
         """
         client = MongoClient(
-            f'mongodb://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOST}:{DATABASE_PORT}')
+            f'mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false')
 
         self.db = client[DATABASE_NAME]
 
