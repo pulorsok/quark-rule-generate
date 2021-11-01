@@ -1,7 +1,8 @@
 from utils.tools import sha256sum
-from quark.Objects.quark import Quark
+from quark.core.quark import Quark
 from db.database import DataBase
 
+from pyaxmlparser import APK
 
 class AndroidSampleModel:
 
@@ -46,7 +47,16 @@ class AndroidSampleModel:
         :return: a string of apk filename
         """
         return self.apk_analysis.apkinfo.filename
+    
+    @property
+    def packagename(self):
+        """
+        Return apk packagename
 
+        :return: a string of apk packagename
+        """    
+        return APK(self.apk).packagename
+    
     @property
     def permissions(self):
         """

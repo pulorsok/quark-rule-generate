@@ -6,16 +6,23 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-tqdm = "*"
-filehash = "*"
 prettytable = "*"
+tqdm = "*"
 colorama = "*"
+quark-engine = "*"
 click = "*"
 androguard = "==3.4.0a1"
-pymongo = "*"
-scrapy = "*"
-flask = "*"
 graphviz = "*"
+requests = "*"
+pandas = "*"
+plotly = "*"
+prompt-toolkit = "==3.0.19"
+rzpipe = "*"
+pymongo = "*"
+pyaxmlparser = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true

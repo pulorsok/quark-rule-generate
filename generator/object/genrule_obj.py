@@ -1,9 +1,9 @@
 
 
-from quark.Objects.quarkrule import QuarkRule
+from quark.core.struct.ruleobject import RuleObject
 
 
-class GenRuleObject(QuarkRule):
+class GenRuleObject(RuleObject):
     __slots__ = ["check_item", "_json_obj", "_crime",
                  "_permission", "_api", "_score", "rule_filename"]
 
@@ -14,7 +14,7 @@ class GenRuleObject(QuarkRule):
         :param json_obj:
         """
         # the state of five stages
-        self.check_item = [False, False, False, False, False]
+        self.check_item = [False, False, False, False, False, False]
 
         self._json_obj = json_obj
         self._crime = self._json_obj["crime"]

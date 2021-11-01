@@ -13,7 +13,7 @@ class APIModel:
 
         :return: a md5 string of api content
         """
-        full_name = str(self.api.method.full_name)
+        full_name = str(self.api.cache.full_name)
         md5 = hashlib.md5()
         md5.update(full_name.encode("utf-8"))
 
@@ -26,7 +26,7 @@ class APIModel:
 
         :return: the string of class name
         """
-        return str(self.api.method.get_class_name())
+        return str(self.api.cache.get_class_name())
 
     @property
     def method_name(self):
@@ -35,7 +35,7 @@ class APIModel:
 
         :return: the string of method name
         """
-        return str(self.api.method.get_name())
+        return str(self.api.name)
 
     @property
     def descriptor(self):
@@ -44,7 +44,7 @@ class APIModel:
 
         :return: the string of api descriptor
         """
-        return str(self.api.method.get_descriptor())
+        return str(self.api.cache.get_descriptor())
 
     @property
     def api_obj(self):

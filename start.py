@@ -1,5 +1,3 @@
-
-
 import os
 import sys
 import atexit
@@ -14,15 +12,16 @@ from tqdm import tqdm
 from model.android_sample_model import AndroidSampleModel
 from generator.method_generator import MethodCombGenerator
 from generator.api_generator import ApiGenerator
-from quark.Objects.quark import Quark
+from quark.core.quark import Quark
 
 from db.database import DataBase
 
-from utils.tools import distribute, api_filter
+from utils.tools import distribute, api_filter, api_key_word_filter
 from itertools import repeat
 
 db = DataBase()
-
+sys.setrecursionlimit(10000)
+KEYWORDS = ["blacklist", "filter", "block", "send", "list"]
 
 @click.command()
 @click.option(
@@ -55,12 +54,24 @@ db = DataBase()
 @click.option(
     "-s",
     "--stage",
-    default=1,
+    default=0,
     type=click.INT,
     show_default=True,
     help="The stage of rule generate",
 )
-def main(apk, multiprocess, debug, export, stage):
+@click.option(
+    "-f",
+    "--filter",
+    is_flag=True,
+    help="filter api name with given keywords",
+)
+@click.option(
+    "-p",
+    "--parameter",
+    is_flag=True,
+    help="filter api parameters with given keywords"
+)
+def main(apk, multiprocess, debug, export, stage, filter, parameter):
     """Quark rule generate project"""
 
     apk = AndroidSampleModel(apk)
@@ -70,7 +81,7 @@ def main(apk, multiprocess, debug, export, stage):
         
         result = db.find_rules_by_sample(apk.id)
 
-        if result["status"] is not 1:
+        if result["status"] != 1:
             if not click.confirm(f'The apk generate progress is not complete, Do you sure want to continue?'):
                 return
 
@@ -107,10 +118,23 @@ def main(apk, multiprocess, debug, export, stage):
     elif stage == 4:
         first_apis = secondary
         second_apis = secondary
+    elif stage == 0:
+        first_apis = primary + secondary
+        second_apis = primary + secondary
         
+    # keywords filter
+    if filter:
+        first_apis = api_key_word_filter(apk, apk.apk_analysis.apkinfo.custom_methods, KEYWORDS)
+    
+    param_keywords = None
+    if parameter:
+        param_keywords = KEYWORDS
+ 
     api_generator = ApiGenerator(first_apis)
+    api_generator2 = ApiGenerator(second_apis)
     apis = list(api_generator.initialize())
-
+    apis2 = list(api_generator2.initialize())
+    
     tqdm.write(f"Analyzing apk with {multiprocess} process")
     if multiprocess == 1:
 
@@ -132,10 +156,27 @@ def main(apk, multiprocess, debug, export, stage):
         tqdm.write(f"The rest of APIs number: {len(new_apis)}")
 
         generator = MethodCombGenerator(apk)
-        generator.first_stage_rule_generate(new_apis, primary)
+        generator.first_stage_rule_generate(new_apis, second_apis, parameter)
+        
+        if filter:
+            new_apis = []
 
-    else:
-        generate_multiprocess(apk, apis, second_apis, multiprocess)
+            if result is not None:
+                done_apis = result["progress"]
+                new_apis = []
+                for single_api in apis2:
+                    if not single_api.id in done_apis:
+                        new_apis.append(single_api)
+            else:
+                new_apis = apis2
+                
+            generator.first_stage_rule_generate(new_apis, first_apis, param_keywords)
+            
+
+    else:    
+        generate_multiprocess(apk, apis, second_apis, multiprocess, param_keywords)
+        if filter:
+            generate_multiprocess(apk, second_apis, apis, multiprocess, param_keywords)
         
     db.set_status(apk.id, 1)
     if debug:
@@ -181,7 +222,7 @@ def rule_obj_generate(rule, f_name):
     }
     return rule_obj
 
-def generate_multiprocess(apk, apis, second_apis, multiprocess):
+def generate_multiprocess(apk, apis, second_apis, multiprocess, param_keywords):
 
     result = db.search_sample_data(apk.id)
 
@@ -207,7 +248,7 @@ def generate_multiprocess(apk, apis, second_apis, multiprocess):
 
     jobs = list()
     for i in range(multiprocess):
-        p = Process(target=generate, args=(api_pools[i], second_apis, i+1, apk, event))
+        p = Process(target=generate, args=(api_pools[i], second_apis, i+1, apk, event, param_keywords))
         jobs.append(p)
         p.start()
 
@@ -223,17 +264,27 @@ def generate_multiprocess(apk, apis, second_apis, multiprocess):
                 time.sleep(1)
                 break
             time.sleep(2)
-        generate_multiprocess(apk, new_apis, second_apis, multiprocess)
+        generate_multiprocess(apk, new_apis, second_apis, multiprocess, param_keywords)
     
     for j in jobs:
         j.join()
         
 
-def generate(f_pool, s_pool, pbar, apk, event):
+def generate(f_pool, s_pool, pbar, apk, event, param_keywords):
     generator = MethodCombGenerator(apk, pbar)
-    generator.first_stage_rule_generate(f_pool, s_pool)
+    generator.first_stage_rule_generate(f_pool, s_pool, param_keywords)
     event.set()
 
 
 if __name__ == "__main__":
     main()
+
+    # APK = "/Users/pock/apk-malware-samples/thememanager.apk"
+    # apk = AndroidSampleModel(APK)
+    # print(len(apk.apk_analysis.apkinfo.android_apis))
+    # print(len(apk.apk_analysis.apkinfo.custom_methods))
+    # print(len(apk.apk_analysis.apkinfo.all_methods))
+    # primary, secondary, p_count = api_filter(apk, 0.2)
+    # first_apis = api_key_word_filter(apk, apk.apk_analysis.apkinfo.all_methods, KEYWORDS)
+    # print(f"second: {p_count}")
+    # print(f"filtered: {len(first_apis)}")
