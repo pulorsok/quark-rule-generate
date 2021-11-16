@@ -80,8 +80,16 @@ class MethodCombGenerator:
             return False
 
         return True
+    
+    def api_filter(self, api, keywords):
+        
+        for keyword in keywords:
+            if keyword in api.method_name:
+                return True
 
-    def first_stage_rule_generate(self, first_apis_pool, second_apis_pool):
+        return False
+
+    def first_stage_rule_generate(self, first_apis_pool, second_apis_pool, filter):
         """
         Extract all api usage in apk current apk then generate method combination.
 
@@ -139,12 +147,12 @@ class MethodCombGenerator:
                         {
                             "class": api1.class_name,
                             "method": api1.method_name,
-                            "descriptor": api1.descriptor
+                            "descriptor": api1.descriptor,
                         },
                         {
                             "class": api2.class_name,
                             "method": api2.method_name,
-                            "descriptor": api2.descriptor
+                            "descriptor": api2.descriptor,                    
                         }
                     ],
                     "score": 1
@@ -160,18 +168,25 @@ class MethodCombGenerator:
                 except Exception as e:
                     tqdm.write("{} and {} combination has some error when analyzing, ERROR MESSAGE: {}".format(
                         api1.id, api2.id, e))
-                    
                     continue
-
-                if not comb.check_item[4]:
-                    continue
+                
+                if comb.check_item[5]:
+                    matched_list.append({
+                        "m1": api1.id,
+                        "m2": api2.id,
+                        "confidence": "120%",
+                    })
+                elif comb.check_item[4]:
+                    matched_list.append({
+                        "m1": api1.id,
+                        "m2": api2.id,
+                        "confidence": "100%",
+                    })  
 
                 # tqdm.write("{} and {} matched check!".format(
                 #     colors.green(api1.id), colors.green(api2.id)))
-                matched_list.append({
-                    "m1": api1.id,
-                    "m2": api2.id
-                })
+                
+                
 
                 id_list.append(api1.id + api2.id)
 

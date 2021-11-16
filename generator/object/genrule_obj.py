@@ -14,7 +14,7 @@ class GenRuleObject(RuleObject):
         :param json_obj:
         """
         # the state of five stages
-        self.check_item = [False, False, False, False, False]
+        self.check_item = [False, False, False, False, False, False]
 
         self._json_obj = json_obj
         self._crime = self._json_obj["crime"]

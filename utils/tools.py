@@ -59,31 +59,43 @@ def distribute(seq, sort):
 
 def api_filter(apk, percentile_rank):
     statistic_result = {}
+    str_statistic_result = {}
     api_pool = apk.apk_analysis.apkinfo.android_apis
     for api in api_pool:
         number_from = len(apk.apk_analysis.apkinfo.upperfunc(api))
-        statistic_result[api] = number_from
+        if number_from > 0:
+            statistic_result[str(api)] = number_from
+            str_statistic_result[str(api)] = api
 
-    sorted_result = {k: v for k, v in sorted(statistic_result.items(), key=lambda item: item[1])}
+    sorted_result1 = {k: v for k, v in sorted(statistic_result.items(), key=lambda item: item[1])}
+    sorted_result = {k: v for k, v in sorted(sorted_result1.items())}
     
-    threshold = len(api_pool) * percentile_rank
+    threshold = len(sorted_result) * percentile_rank
+    # while threshold > gap:
+    #     threshold = threshold * percentile_rank
+        
     api_above = []
     api_under = []
     p_count = {"first": [], "second": []}
-    for i, (api, number) in enumerate(sorted_result.items()):
+    for i, (api, number) in enumerate(sorted_result.items()):        
         if i < threshold:
-            api_above.append(api)
+            api_above.append(str_statistic_result[api])
             p_count["first"].append(number)
             continue
         p_count["second"].append(number)
-        api_under.append(api)
+        api_under.append(str_statistic_result[api])
         
     return api_above, api_under, p_count
 
-def api_key_word_filter(api_pool, keywords):
+def api_key_word_filter(apk, api_pool, keywords):
     
     new_api_pool = []
     for api in api_pool:
+        number_from = len(apk.apk_analysis.apkinfo.upperfunc(api))
+        
+        if not number_from > 0:
+            continue
+            
         for keyword in keywords:
             if keyword.lower() in api.name.lower():
                 new_api_pool.append(api)

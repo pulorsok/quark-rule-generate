@@ -22,7 +22,9 @@ from utils.tools import distribute, api_filter, api_key_word_filter
 from itertools import repeat
 
 db = DataBase()
-KEYWORDS = ["getAbsolutePath"]
+sys.setrecursionlimit(10000)
+
+KEYWORDS = ["call"]
 
 @click.command()
 @click.option(
@@ -55,7 +57,7 @@ KEYWORDS = ["getAbsolutePath"]
 @click.option(
     "-s",
     "--stage",
-    default=1,
+    default=0,
     type=click.INT,
     show_default=True,
     help="The stage of rule generate",
@@ -70,7 +72,6 @@ def main(apk, multiprocess, debug, export, stage, filter):
     """Quark rule generate project"""
 
     apk = AndroidSampleModel(apk)
-
     # Export all rules into JSON files
     if export:
         
@@ -98,7 +99,10 @@ def main(apk, multiprocess, debug, export, stage, filter):
 
                 count += 1
         return
-
+    
+    apk_sample = db.search_sample_data(apk.id)
+    if apk_sample["status"] == 1:
+        return
     # # Apis generate
     primary, secondary, p_count = api_filter(apk, 0.2)
     
@@ -120,15 +124,13 @@ def main(apk, multiprocess, debug, export, stage, filter):
     
     if filter:
         # keywords filter
-        first_apis = api_key_word_filter(apk.apk_analysis.apkinfo.all_methods, KEYWORDS)
-        
-        print(len(first_apis))
-        print(len(second_apis))
-        # return
+        first_apis = api_key_word_filter(apk, apk.apk_analysis.apkinfo.all_methods, KEYWORDS)
     
     api_generator = ApiGenerator(first_apis)
+    api_generator2 = ApiGenerator(second_apis)
     apis = list(api_generator.initialize())
-
+    api_generator2.initialize()
+    
     tqdm.write(f"Analyzing apk with {multiprocess} process")
     if multiprocess == 1:
 
@@ -150,7 +152,7 @@ def main(apk, multiprocess, debug, export, stage, filter):
         tqdm.write(f"The rest of APIs number: {len(new_apis)}")
 
         generator = MethodCombGenerator(apk)
-        generator.first_stage_rule_generate(new_apis, second_apis)
+        generator.first_stage_rule_generate(new_apis, second_apis, KEYWORDS)
 
     else:
         generate_multiprocess(apk, apis, second_apis, multiprocess)
@@ -215,10 +217,6 @@ def generate_multiprocess(apk, apis, second_apis, multiprocess):
                 new_apis.append(single_api)
     else:
         new_apis = apis
-
-    # tqdm.write(f"APIs usage number: {len(apis)}")
-    # tqdm.write(f"Analysis api done: {len(done_apis)}")
-    # tqdm.write(f"The rest of APIs number: {len(new_apis)}")
     
     api_pools = distribute(new_apis, multiprocess)
     
@@ -250,9 +248,20 @@ def generate_multiprocess(apk, apis, second_apis, multiprocess):
 
 def generate(f_pool, s_pool, pbar, apk, event):
     generator = MethodCombGenerator(apk, pbar)
-    generator.first_stage_rule_generate(f_pool, s_pool)
+    generator.first_stage_rule_generate(f_pool, s_pool, KEYWORDS)
     event.set()
 
 
 if __name__ == "__main__":
     main()
+    
+    # APK = "./Ahmyth.apk"
+    # apk = AndroidSampleModel(APK)
+    # print(len(apk.apk_analysis.apkinfo.android_apis))
+    # print(len(apk.apk_analysis.apkinfo.custom_methods))
+    # print(len(apk.apk_analysis.apkinfo.all_methods))
+    # primary, secondary, p_count = api_filter(apk, 0.2)
+    # first_apis = api_key_word_filter(apk, apk.apk_analysis.apkinfo.all_methods, KEYWORDS)
+    # print(f"second: {p_count}")
+    # print(f"filtered: {len(first_apis)}")
+    
