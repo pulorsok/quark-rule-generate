@@ -81,7 +81,7 @@ class MethodCombGenerator:
 
         return True
 
-    def first_stage_rule_generate(self, first_apis_pool, second_apis_pool):
+    def first_stage_rule_generate(self, first_apis_pool, second_apis_pool, keywords=None):
         """
         Extract all api usage in apk current apk then generate method combination.
 
@@ -96,11 +96,11 @@ class MethodCombGenerator:
         if not self.check_progress():
             return
 
-        api_generator = ApiGenerator(second_apis_pool)
-        inner_api_pool = list(api_generator.generate())
+        # api_generator = ApiGenerator(second_apis_pool)
+        # inner_api_pool = list(api_generator.initialize())
 
         # Setup progress bar
-        second_api_pool_num = len(inner_api_pool)
+        second_api_pool_num = len(second_apis_pool)
         outter_desc = f"Core No.{self.pbar}"
         outter_loop = tqdm(first_apis_pool, desc=outter_desc,
                            position=self.pbar, leave=False)
@@ -122,7 +122,7 @@ class MethodCombGenerator:
 
             matched_list = []
             id_list = []
-            for num, api2 in enumerate(inner_api_pool, start=1):
+            for num, api2 in enumerate(second_apis_pool, start=1):
                 inner_desc = f"{num}/{second_api_pool_num}"
                 outter_loop.set_postfix(inner_loop=inner_desc, refresh=True)
 
@@ -132,6 +132,7 @@ class MethodCombGenerator:
                 if api2.id == api1.id:
                     continue
 
+                
                 _comb = {
                     "crime": "",
                     "permission": [],
@@ -139,12 +140,14 @@ class MethodCombGenerator:
                         {
                             "class": api1.class_name,
                             "method": api1.method_name,
-                            "descriptor": api1.descriptor
+                            "descriptor": api1.descriptor,
+                            "keywords": keywords
                         },
                         {
                             "class": api2.class_name,
                             "method": api2.method_name,
-                            "descriptor": api2.descriptor
+                            "descriptor": api2.descriptor,
+                            "keywords": keywords
                         }
                     ],
                     "score": 1
@@ -161,16 +164,18 @@ class MethodCombGenerator:
                         api1.id, api2.id, e))
                     continue
 
-                if not comb.check_item[4]:
-                    continue
-
-                # tqdm.write("{} and {} matched check!".format(
-                #     colors.green(api1.id), colors.green(api2.id)))
-                matched_list.append({
-                    "m1": api1.id,
-                    "m2": api2.id
-                })
-
+                if comb.check_item[5]:
+                    matched_list.append({
+                        "m1": api1.id,
+                        "m2": api2.id,
+                        "confidence": "120%",
+                    })
+                elif comb.check_item[4]:
+                    matched_list.append({
+                        "m1": api1.id,
+                        "m2": api2.id,
+                        "confidence": "100%",
+                    }) 
                 id_list.append(api1.id + api2.id)
 
             # Insert matched combination to database and update progress
