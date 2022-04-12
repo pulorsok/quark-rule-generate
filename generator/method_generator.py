@@ -96,11 +96,11 @@ class MethodCombGenerator:
         if not self.check_progress():
             return
 
-        api_generator = ApiGenerator(second_apis_pool)
-        inner_api_pool = list(api_generator.generate())
+        # api_generator = ApiGenerator(second_apis_pool)
+        # inner_api_pool = list(api_generator.initialize())
 
         # Setup progress bar
-        second_api_pool_num = len(inner_api_pool)
+        second_api_pool_num = len(second_apis_pool)
         outter_desc = f"Core No.{self.pbar}"
         outter_loop = tqdm(first_apis_pool, desc=outter_desc,
                            position=self.pbar, leave=False)
@@ -122,7 +122,7 @@ class MethodCombGenerator:
 
             matched_list = []
             id_list = []
-            for num, api2 in enumerate(inner_api_pool, start=1):
+            for num, api2 in enumerate(second_apis_pool, start=1):
                 inner_desc = f"{num}/{second_api_pool_num}"
                 outter_loop.set_postfix(inner_loop=inner_desc, refresh=True)
 

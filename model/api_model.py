@@ -35,7 +35,7 @@ class APIModel:
 
         :return: the string of method name
         """
-        return str(self.api.name)
+        return self.api.name
 
     @property
     def descriptor(self):
